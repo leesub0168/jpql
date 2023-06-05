@@ -13,10 +13,9 @@ public class JpaMain {
         tx.begin();
 
         try {
-
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.case_if(em);
+            jpaMain.function(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -29,7 +28,50 @@ public class JpaMain {
 
     }
 
-    private void case_if(EntityManager em) {
+    public void function(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("관리자1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("관리자2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        em.flush();
+        em.clear();
+        /**
+         * JPQL 기본함수
+         * CONCAT, SUBSTRING, TRIM, LOWER, UPPER, LENGTH, LOCATE
+         * ABS, SQRT, MOD
+         * SIZE, INDEX
+         *
+         * 사용자 정의 함수
+         * function(이름, 대상 필드)
+         * */
+        String query = "select concat('a','b') from Member m";
+        String query2 = "select size(t.members) from Team t";
+        String query3 = "select function('group_concat', m.username) from Member m";
+        List<String> resultList = em.createQuery(query3, String.class)
+                .getResultList();
+
+        for (String s : resultList) {
+            System.out.println("s = " + s);
+        }
+
+
+    }
+
+    public void case_if(EntityManager em) {
         Team team = new Team();
         team.setName("teamA");
         em.persist(team);
@@ -67,7 +109,7 @@ public class JpaMain {
 
     }
 
-    private void type(EntityManager em) {
+    public void type(EntityManager em) {
         Team team = new Team();
         team.setName("teamA");
         em.persist(team);
