@@ -1,6 +1,7 @@
 package jpql;
 
 import javax.persistence.*;
+import java.util.Collection;
 import java.util.List;
 
 public class JpaMain {
@@ -15,7 +16,7 @@ public class JpaMain {
         try {
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.function(em);
+            jpaMain.associate(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -26,6 +27,47 @@ public class JpaMain {
             emf.close();
         }
 
+    }
+
+    public void associate(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("관리자1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("관리자2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        em.flush();
+        em.clear();
+
+        /** 단일값 연관 관계 - 묵시적 내부 조인 발생, 탐색 O 실무사용 권장 X */
+        String query1 = "select m.team.name from Member m";
+
+        /** 컬렉션 값 연관 관계 - 묵시적 내부 조인 발생, 탐색 X */
+        String query2 = "select t.members from Team t";
+
+        /** 컬렉션 값 연관 관계 - 명시적 조인을 사용하면 탐색 가능 */
+        String query3 = "select m.username from Team t join t.members m";
+
+        /** 가급적 묵시적 조인 대신에 명시적 조인을 사용해야 한다.
+         *  SQL 튜닝면에서도 명시적 조인이 더 용이하며,
+         *  묵시적 조인은 조인이 일어나는 상황을 한눈에 파악하기 어렵다
+         * */
+
+        List<String> resultList = em.createQuery(query3, String.class).getResultList();
+
+        System.out.println("resultList = " + resultList);
     }
 
     public void function(EntityManager em) {
