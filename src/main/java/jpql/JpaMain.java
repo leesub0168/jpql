@@ -16,7 +16,7 @@ public class JpaMain {
 
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.type(em);
+            jpaMain.case_if(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -25,6 +25,44 @@ public class JpaMain {
         } finally {
             em.close();
             emf.close();
+        }
+
+    }
+
+    private void case_if(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("관리자");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        em.flush();
+        em.clear();
+
+        String query = "select " +
+                            "case when m.age <= 10 then '학생요금' " +
+                            "     when m.age >= 60 then '경로요금' " +
+                            "     else '일반요금'" +
+                            "end " +
+                        "from Member m";
+        List<String> resultList = em.createQuery(query, String.class)
+                .getResultList();
+
+        for (String s : resultList) {
+            System.out.println("s = " + s);
+        }
+
+        String query2 = "select coalesce(m.username, '이름 없는 회원') from Member m";
+        String query3 = "select nullif(m.username, '관리자') from Member m"; // 이름이 관리자면 null로 반환
+        List<String> resultList1 = em.createQuery(query3, String.class).getResultList();
+
+        for (String s : resultList1) {
+            System.out.println("s1 = " + s);
         }
 
     }
@@ -47,6 +85,7 @@ public class JpaMain {
         String query = "select m.username, 'HELLO', true, m.type from Member m " +
                         "where m.type = :userType and m.username is not null" +
                         " and m.age between 1 and 100";
+
         List<Object[]> resultList = em.createQuery(query)
                 .setParameter("userType", MemberType.ADMIN)
                 .getResultList();
