@@ -15,7 +15,7 @@ public class JpaMain {
         try {
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.fetch_join(em);
+            jpaMain.use_entity(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -28,7 +28,42 @@ public class JpaMain {
 
     }
 
-    private void fetch_join(EntityManager em) {
+    public void use_entity(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("회원1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("회원2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        em.flush();
+        em.clear();
+
+        String query1 = "select m from Member m where m = :member";
+        String query2 = "select m from Member m where m.id = :memberId";
+        String query3 = "select m from Member m where m.team = :team";
+        List<Member> list = em.createQuery(query3, Member.class)
+                .setParameter("team", team)
+//                .setParameter("member", member)
+//                .setParameter("memberId", member.getId())
+                .getResultList();
+
+        System.out.println(list.size());
+
+    }
+
+    public void fetch_join(EntityManager em) {
         Team team = new Team();
         team.setName("teamA");
         em.persist(team);
