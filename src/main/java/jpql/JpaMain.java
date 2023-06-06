@@ -15,7 +15,7 @@ public class JpaMain {
         try {
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.named_query(em);
+            jpaMain.bulk(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -25,6 +25,51 @@ public class JpaMain {
             em.close();
             emf.close();
         }
+
+    }
+
+    private void bulk(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("회원1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("회원2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        em.flush();
+        em.clear();
+
+        /**
+         * 벌크연산 - 쿼리 한번으로 여러 테이블의 로우를 변경하는 연산.
+         *           UPDATE, DELETE 를 기본적으로 지원하고,
+         *           하이버네이트에서 INSERT 를 지원
+         *
+         * 주의점 : 영속성 컨텍스트를 무시하고, 데이터베이스에 직접 쿼리함
+         *
+         * 해결책 : 벌크 연산을 먼저 실행해버리기 or 벌크 연산 수행 후 영속성 컨텍스트 초기화
+         * */
+        int resultCount = em.createQuery("update Member m set m.age = 20 where m.username = :username")
+                .setParameter("username", "회원1")
+                .executeUpdate();
+
+        System.out.println("resultCount = " + resultCount);
+        /**
+         * 영속성 컨텍스트에는 변경된 나이가 반영되어있지 않음.
+         * 그래서 영속성 컨텍스트를 초기화하고, 객체를 다시 조회해와야함.
+         * */
+        System.out.println("member = " + member.getAge());
+        System.out.println("member = " + member2.getAge());
 
     }
 
