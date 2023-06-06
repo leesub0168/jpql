@@ -1,7 +1,6 @@
 package jpql;
 
 import javax.persistence.*;
-import java.util.Collection;
 import java.util.List;
 
 public class JpaMain {
@@ -16,7 +15,7 @@ public class JpaMain {
         try {
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.associate(em);
+            jpaMain.fetch_join(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -26,6 +25,73 @@ public class JpaMain {
             em.close();
             emf.close();
         }
+
+    }
+
+    private void fetch_join(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Team team2 = new Team();
+        team2.setName("teamB");
+        em.persist(team2);
+
+        Member member = new Member();
+        member.setUsername("회원1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("회원2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        Member member3 = new Member();
+        member3.setUsername("회원3");
+        member3.setAge(10);
+        member3.changeTeam(team2);
+        member3.setType(MemberType.ADMIN);
+        em.persist(member3);
+
+        em.flush();
+        em.clear();
+
+        /** 지연 로딩이 되어있어도, fetch 조인이 우선. */
+        String query = "select m from Member m join fetch m.team";
+        /** 일대다 관계는 데이터를 조회하면 결과 갯수가 뻥튀기됨. 다대일은 상관 X */
+        String query2 = "select t from Team t join fetch t.members";
+        /** 중복된 데이터를 제거하고 싶으면 distinct 사용 */
+        String query3 = "select distinct t from Team t join fetch t.members";
+
+        /** 일반 조인은 결과를 반환할 때 연관 관계를 고려하지 않음.
+         *  Team을 조회하면, Team만 가져오고, 그 이후에 Team의 멤버를 필요로 하면 그때 다시 조회쿼리가 나가게됨
+         *
+         *  페치 조인은 연관된 엔티티도 함께 조회된다.(즉시로딩) - 페치조인은 객체그래프를 한번에 조회
+         * */
+        String just_join = "select t from Team t join t.members m ";
+        String fetch_join = "select t from Team t join fetch t.members";
+
+        /** 컬렉션을 페치 조인하면 페이징 api를 사용할 수 없다. 사용시 동작은 하나 jpa에서 결과값을 다 가져온 후
+         *  메모리에서 페이징 하는 식으로 처리하기 때문에 위험.
+         *
+         *  JPA 에서는 객체 그래프 탐색시 전체를 다 가져오는 것을 전제로 한다.
+         *  예를 들어 Team의 members를 조회해온다면, 전체 멤버를 조회해와야지 멤버중 5명만 조회하는 것은 의미에 맞지않다.
+         *  만약 멤버 5명만 필요하다면 Member 쪽에서 5명을 조회하는 방식으로 바꿔야 한다.
+         * */
+        List<Team> result = em.createQuery("select t from Team t", Team.class).getResultList();
+
+        for (Team t : result) {
+            System.out.println("team = " + t.getName() + ", members = " + t.getMembers().size());
+            for (Member m : t.getMembers()) {
+                System.out.println("-> member : " + m);
+            }
+        }
+
 
     }
 
