@@ -15,7 +15,7 @@ public class JpaMain {
         try {
             JpaMain jpaMain = new JpaMain();
 
-            jpaMain.use_entity(em);
+            jpaMain.named_query(em);
 
             tx.commit();
         } catch (Exception e) {
@@ -24,6 +24,40 @@ public class JpaMain {
         } finally {
             em.close();
             emf.close();
+        }
+
+    }
+
+    private void named_query(EntityManager em) {
+        Team team = new Team();
+        team.setName("teamA");
+        em.persist(team);
+
+        Member member = new Member();
+        member.setUsername("회원1");
+        member.setAge(10);
+        member.changeTeam(team);
+        member.setType(MemberType.ADMIN);
+        em.persist(member);
+
+        Member member2 = new Member();
+        member2.setUsername("회원2");
+        member2.setAge(10);
+        member2.changeTeam(team);
+        member2.setType(MemberType.ADMIN);
+        em.persist(member2);
+
+        em.flush();
+        em.clear();
+
+        /**
+         * Named 쿼리는 어노테이션으로 세팅하기때문에 컴파일 시점에 오류를 잡아낼 수 있다는 장점이 있음.
+         * */
+        List<Member> resultList = em.createNamedQuery("Member.findByUserName", Member.class)
+                .setParameter("username", "회원1")
+                .getResultList();
+        for (Member m : resultList) {
+            System.out.println("member = " + m);
         }
 
     }
